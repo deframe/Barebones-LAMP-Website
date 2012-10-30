@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<!-- ======================================================================= -->
+<!-- This is a Phing build script that can be used to create an initialized  -->
+<!-- version of this project [http://www.phing.info/]                        -->
+<!-- ======================================================================= -->
+
+<project name="Website" default="main">
+
+    <!-- =================================================================== -->
+    <!-- (DEFAULT) Target: Main                                              -->
+    <!--                                                                     -->
+    <!-- This will display the targets that are available in this buildfile. -->
+    <!-- =================================================================== -->
+
+    <target name="main">
+      <echo message="The targets that are available in this buildfile are 'init-working-copy' and 'full-build'."/>
+    </target>
+
+    <!-- =================================================================== -->
+    <!-- Target: Initialize Working Copy                                     -->
+    <!--                                                                     -->
+    <!-- This will initialize the working copy of the project with the       -->
+    <!-- correct settings, database, etc.                                    -->
+    <!-- =================================================================== -->
+
+    <target name="init-working-copy">
+
+        <!-- Prompt for build parameters -->
+
+        <propertyprompt propertyName="database.host" promptText="Database host" promptCharacter=":" defaultValue="localhost" useExistingValue="true"/>
+        <propertyprompt propertyName="database.username" promptText="Database username" promptCharacter=":" defaultValue="apachewrite" useExistingValue="true"/>
+        <propertyprompt propertyName="database.password" promptText="Database password" promptCharacter=":" defaultValue="t1bus" useExistingValue="true"/>
+        <propertyprompt propertyName="database.name" promptText="Database name" promptCharacter=":" useExistingValue="true"/>
+
+        <!-- Validate and process parameters -->
+
+        <if>
+            <equals arg1="${database.name}" arg2=""/>
+            <then>
+                <fail message="Database name property must be specified!"/>
+            </then>
+        </if>
+
+        <!-- Create database -->
+
+        <pdosqlexec url="mysql:host=${database.host}" userid="${database.username}" password="${database.password}">
+            CREATE DATABASE IF NOT EXISTS ${database.name};
+        </pdosqlexec>
+
+        <pdosqlexec url="mysql:host=${database.host};dbname=${database.name}" userid="${database.username}" password="${database.password}">
+            <transaction src="./database.sql"/>
+        </pdosqlexec>
+		
+        <!-- Create and update database config file -->
+
+        <if>
+            <not>
+                <available file="./config/database.ini"/>
+            </not>
+            <then>
+                <copy file="./config/database.ini.sample" tofile="./config/database.ini"/>
+                <reflexive>
+                    <fileset dir=".">
+                        <include name="config/database.ini"/>
+                    </fileset>
+                    <filterchain>
+                        <replaceregexp>
+                            <regexp pattern="(name\s*=)" replace="\1 ${database.name}"/>
+                            <regexp pattern="(host\s*=)" replace="\1 ${database.host}"/>
+                            <regexp pattern="(username\s*=)" replace="\1 ${database.username}"/>
+                            <regexp pattern="(password\s*=)" replace="\1 ${database.password}"/>
+                        </replaceregexp>
+                    </filterchain>
+                </reflexive>
+            </then>
+        </if>		
+
+    </target>
+
+  <!-- ===================================================================== -->
+  <!-- Target: Full Build                                                    -->
+  <!--                                                                       -->
+  <!-- This will create a full (clean) build of the project in a             -->
+  <!-- specified installation directory.                                     -->
+  <!-- ===================================================================== -->
+
+  <target name="full-build">
+
+      <!-- Prompt for build parameters -->
+
+      <propertyprompt propertyName="installation.dir" promptText="Installation dir" promptCharacter=":" useExistingValue="true"/>
+      <propertyprompt propertyName="database.host" promptText="Database host" promptCharacter=":" defaultValue="localhost" useExistingValue="true"/>
+      <propertyprompt propertyName="database.username" promptText="Database username" promptCharacter=":" defaultValue="apachewrite" useExistingValue="true"/>
+      <propertyprompt propertyName="database.password" promptText="Database password" promptCharacter=":" defaultValue="t1bus" useExistingValue="true"/>
+      <propertyprompt propertyName="database.name" promptText="Database name" promptCharacter=":" useExistingValue="true"/>
+
+      <!-- Validate and process parameters -->
+
+      <if>
+          <equals arg1="${installation.dir}" arg2=""/>
+          <then>
+              <fail message="Installation dir must be specified!"/>
+          </then>
+      </if>
+
+      <resolvepath propertyName="installation.dir" file="${installation.dir}"/>
+
+      <if>
+          <equals arg1="${database.name}" arg2=""/>
+          <then>
+              <fail message="Database name property must be specified!"/>
+          </then>
+      </if>
+
+      <!-- Copy files to the installation dir -->
+
+      <copy todir="${installation.dir}">
+          <fileset dir=".">
+              <include name="src/"/>
+              <include name="vendor/"/>
+              <include name="web/"/>
+          </fileset>
+      </copy>
+
+      <!-- Create database -->
+
+      <pdosqlexec url="mysql:host=${database.host}" userid="${database.username}" password="${database.password}">
+          CREATE DATABASE IF NOT EXISTS ${database.name};
+      </pdosqlexec>
+
+      <pdosqlexec url="mysql:host=${database.host};dbname=${database.name}" userid="${database.username}" password="${database.password}">
+          <transaction src="./database.sql"/>
+      </pdosqlexec>
+
+      <!-- Create and update database config file -->
+
+      <move file="${installation.dir}/config/database.ini.sample" tofile="${installation.dir}/config/database.ini" overwrite="true"/>
+
+      <reflexive>
+          <fileset dir="${installation.dir}">
+              <include name="config/database.ini"/>
+          </fileset>
+          <filterchain>
+              <replaceregexp>
+                  <regexp pattern="(name\s*=)" replace="\1 ${database.name}"/>
+                  <regexp pattern="(host\s*=)" replace="\1 ${database.host}"/>
+                  <regexp pattern="(username\s*=)" replace="\1 ${database.username}"/>
+                  <regexp pattern="(password\s*=)" replace="\1 ${database.password}"/>
+              </replaceregexp>
+          </filterchain>
+      </reflexive>	  
+	  
+  </target>
+
+</project>

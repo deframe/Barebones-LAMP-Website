@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<!-- ======================================================================= -->
+<!-- This is a phpDocumentor configuration file that has been set up to      -->
+<!-- produce API documentation for this project [http://www.phpdoc.org]      -->
+<!-- ======================================================================= -->
+
+<phpdoc>
+    <title>My Website v1.0</title>
+    <parser>
+        <target>./docs/</target>
+    </parser>
+    <transformer>
+        <target>./docs/</target>
+    </transformer>
+    <files>
+        <directory>./src/</directory>
+    </files>
+</phpdoc>

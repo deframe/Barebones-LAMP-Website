@@ -1,0 +1,3 @@
+--
+-- Database schema should be placed in here!
+--
